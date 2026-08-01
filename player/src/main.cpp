@@ -31,11 +31,10 @@
 
 PSP_MODULE_INFO("EasyRPG", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
-// The default heap (build.mak default) is small and was never raised, so
-// bigger maps/chipsets/games could run out of memory and abort on real
-// hardware even though they run fine in an emulator with more lenient
-// memory handling. Ask for as much of the available user RAM as possible.
-PSP_HEAP_SIZE_MAX();
+// NOTE: older pspsdk had a PSP_HEAP_SIZE_MAX() macro here, but current
+// pspdev/pspsdk removed it as part of a heap-allocation rework -- the
+// runtime now uses all available RAM for the heap by default (minus a
+// small reserve), so no explicit declaration is needed anymore.
 
 // Without an exit callback, pressing HOME on real hardware doesn't return
 // to the XMB -- the game just hangs and the console needs a battery pull.
