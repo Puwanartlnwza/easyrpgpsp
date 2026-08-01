@@ -26,6 +26,7 @@ PSPBIN = $(PSPSDK)/../bin
 CFLAGS += $(shell $(PSPBIN)/sdl-config --cflags)
 LIBS += \
 	-lstdc++ -lexpat \
+	-lpsppower \
 	-lSDL_ttf -lfreetype \
 	-lSDL_gfx \
 	-lSDL_mixer -lvorbisfile -lvorbis -lvorbisenc -logg \

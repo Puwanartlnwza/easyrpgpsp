@@ -19,6 +19,7 @@
 /// Headers
 ////////////////////////////////////////////////////////////
 #include <cstdarg>
+#include <cstdlib>
 #include "reader_lcf.h"
 
 ////////////////////////////////////////////////////////////
@@ -30,7 +31,8 @@ std::string LcfReader::error_str;
 LcfReader::LcfReader(const char* filename, std::string encoding) :
 	filename(filename),
 	encoding(encoding),
-	stream(fopen(filename, "rb"))
+	stream(fopen(filename, "rb")),
+	read_error(false)
 {
 }
 
@@ -38,7 +40,8 @@ LcfReader::LcfReader(const char* filename, std::string encoding) :
 LcfReader::LcfReader(const std::string& filename, std::string encoding) :
 	filename(filename),
 	encoding(encoding),
-	stream(fopen(filename.c_str(), "rb"))
+	stream(fopen(filename.c_str(), "rb")),
+	read_error(false)
 {
 }
 
@@ -61,11 +64,24 @@ size_t LcfReader::Read0(void *ptr, size_t size, size_t nmemb) {
 
 ////////////////////////////////////////////////////////////
 void LcfReader::Read(void *ptr, size_t size, size_t nmemb) {
-#ifdef NDEBUG
-	Read0(ptr, size, nmemb);
-#else
-	assert(Read0(ptr, size, nmemb) == nmemb);
-#endif
+	// NOTE: this used to be `assert(Read0(...) == nmemb)` in non-release
+	// builds. Since PSP_FW/this Makefile never defines NDEBUG, that assert
+	// was ALWAYS active, so ANY file that didn't match the exact expected
+	// byte layout -- a truncated file, a save/database edited by a
+	// different RPG Maker version, or a slightly non-standard/corrupted
+	// file -- called abort() and took down the whole PSP instead of just
+	// failing to load that one file.
+	//
+	// Instead: zero-fill whatever wasn't read and remember that something
+	// went wrong. Callers (and the chunk-reading loop in reader_struct.cpp)
+	// check IsOk() and stop parsing cleanly rather than crashing.
+	size_t got = Read0(ptr, size, nmemb);
+	if (got != nmemb) {
+		if (got < nmemb && size > 0) {
+			memset(static_cast<uint8_t*>(ptr) + got * size, 0, (nmemb - got) * size);
+		}
+		read_error = true;
+	}
 }
 
 ////////////////////////////////////////////////////////////
@@ -175,16 +191,41 @@ void LcfReader::Read<uint32_t>(std::vector<uint32_t> &buffer, size_t size) {
 
 ////////////////////////////////////////////////////////////
 void LcfReader::ReadString(std::string& ref, size_t size) {
-	char* chars = new char[size + 1];
+	// `size` comes straight from a length field in the file. A truncated,
+	// corrupt, or non-standard file can make this an absurd value (it's
+	// just whatever bytes happened to be interpreted as a length). This
+	// build compiles with -fno-exceptions, so a failed `new`/bad_alloc
+	// calls terminate()/abort() instead of throwing -- i.e. a single bad
+	// string length used to be able to crash the whole PSP. Cap it and
+	// use malloc (NULL check) instead of new (abort-on-failure) so a
+	// bogus/huge size just fails to load this string instead of the game.
+	static const size_t kMaxStringSize = 8 * 1024 * 1024; // 8 MB, generous for RM2k/2k3 text
+	if (size > kMaxStringSize) {
+		SetError("Corrupt or unsupported file: string length %lu is not sane.\n",
+				 static_cast<unsigned long>(size));
+		read_error = true;
+		ref.clear();
+		Seek(static_cast<size_t>(size), FromCurrent); // best-effort: skip past the bogus data
+		return;
+	}
+
+	char* chars = static_cast<char*>(malloc(size + 1));
+	if (chars == NULL) {
+		SetError("Out of memory while reading a %lu byte string.\n",
+				 static_cast<unsigned long>(size));
+		read_error = true;
+		ref.clear();
+		return;
+	}
 	chars[size] = '\0';
 	Read(chars, 1, size);
 	ref = Encode(std::string(chars));
-	delete[] chars;
+	free(chars);
 }
 
 ////////////////////////////////////////////////////////////
 bool LcfReader::IsOk() const {
-	return (stream != NULL && !ferror(stream));
+	return (stream != NULL && !ferror(stream) && !read_error);
 }
 
 ////////////////////////////////////////////////////////////
@@ -258,7 +299,8 @@ void LcfReader::SetError(const char* fmt, ...) {
 	va_start(args, fmt);
 
 	char str[256];
-	vsprintf(str, fmt, args);
+	vsnprintf(str, sizeof(str), fmt, args);
+	str[sizeof(str) - 1] = '\0';
 
 	error_str = str;
 	//Output::ErrorStr((std::string)str);

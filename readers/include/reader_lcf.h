@@ -225,6 +225,11 @@ private:
 	std::string encoding;
 	/// File-stream managed by this Reader
 	FILE* stream;
+	/// Set to true when a read didn't return the requested amount of
+	/// data (truncated/corrupt/non-standard file) or when a string
+	/// length looked bogus. Checked by IsOk() so callers can bail out
+	/// of a broken file cleanly instead of crashing on garbage data.
+	bool read_error;
 
 	/// Contains the last set error
 	static std::string error_str;

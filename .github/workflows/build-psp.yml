@@ -1,0 +1,41 @@
+name: Build PSP EBOOT
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-psp:
+    runs-on: ubuntu-latest
+    container: pspdev/pspdev:latest   # มี psp-gcc, PSPSDK, mksfoex, pack-pbp และไลบรารี SDL1.2/SDL_image/SDL_mixer/SDL_ttf/SDL_gfx/freetype/libpng/jpeg/zlib/expat/libvorbis/libogg/smpeg ติดมาให้แล้ว
+
+    steps:
+      - name: Install extra host tools
+        run: apk add --no-cache make git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # แก้ path นี้ให้ตรงกับตำแหน่งจริงของโฟลเดอร์ player/builds/psp ใน repo ของคุณ
+      - name: Clean previous build artifacts
+        working-directory: player/builds/psp
+        run: make clean || true
+
+      - name: Build EasyRPG Player for PSP
+        working-directory: player/builds/psp
+        run: make -j$(nproc)
+
+      - name: Verify EBOOT.PBP was produced
+        working-directory: player/builds/psp
+        run: ls -la EBOOT.PBP EasyRPG.elf
+
+      - name: Upload EBOOT.PBP as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: easyrpg-psp-eboot
+          path: |
+            player/builds/psp/EBOOT.PBP
+            player/builds/psp/EasyRPG.elf

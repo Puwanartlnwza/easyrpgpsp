@@ -52,7 +52,7 @@ void Struct<S>::ReadLcf(S& obj, LcfReader& stream) {
 
 	LcfReader::Chunk chunk_info;
 
-	while (!stream.Eof()) {
+	while (!stream.Eof() && stream.IsOk()) {
 		chunk_info.ID = stream.ReadInt();
 		if (chunk_info.ID == 0)
 			break;
