@@ -27,7 +27,7 @@ CFLAGS += $(shell $(PSPBIN)/sdl-config --cflags)
 LIBS += \
 	-lstdc++ -lexpat \
 	-lpsppower \
-	-lSDL_ttf -lfreetype \
+	-lSDL_ttf -lfreetype -lbz2 \
 	-lSDL_gfx \
 	-lSDL_mixer -lvorbisfile -lvorbis -lvorbisenc -logg \
 	-lSDL_image -lsmpeg -lpng -ljpeg -lz -lm \
