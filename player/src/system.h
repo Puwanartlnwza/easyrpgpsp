@@ -138,7 +138,16 @@
 	typedef Sint64  int64;
 	typedef Uint64  uint64;
 
+#ifndef PSP
+	// pspdev's <sys/types.h> already declares `typedef unsigned int uint;`
+	// (System V compatibility) and gets pulled in transitively through
+	// SDL's headers on PSP. Redeclaring it here to `Uint32` (same
+	// underlying type, but a different typedef chain) is legal in some
+	// compilers but the current pspdev gcc treats it as a conflicting
+	// declaration and fails to build. Just reuse the one that's already
+	// there on PSP.
 	typedef Uint32  uint;
+#endif
 #else
 	#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
 		#include <stdint.h>
