@@ -29,7 +29,10 @@
 #include <pspdebug.h>
 #include <psppower.h>
 
-PSP_MODULE_INFO("EasyRPG", 0, 1, 0);
+// NOTE: no PSP_MODULE_INFO() here -- this build links against SDL's own
+// PSP main stub (libSDLmain.a, via the `-Dmain=SDL_main` trick in the
+// Makefile), which already provides one. Declaring a second one here
+// caused a "multiple definition of `module_info`" link error.
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 // NOTE: older pspsdk had a PSP_HEAP_SIZE_MAX() macro here, but current
 // pspdev/pspsdk removed it as part of a heap-allocation rework -- the
