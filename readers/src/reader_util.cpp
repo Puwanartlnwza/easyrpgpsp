@@ -119,11 +119,12 @@ std::string ReaderUtil::Recode(const std::string& str_to_encode,
 	size_t dst_size = str_to_encode.size() * 5 + 10;
 	char *dst = new char[dst_size];
 	size_t dst_left = dst_size;
-#ifdef PSP
-	char const *p = src;
-#else
+	// NOTE: older PSPSDK (~2012) declared iconv()'s 2nd argument as
+	// `const char**`, hence the PSP-specific const branch that used to be
+	// here. Current pspdev toolchains declare it the standard POSIX way,
+	// `char**` (non-const), same as every other platform -- so we now use
+	// the same non-const pointer on all platforms, matching iconv.h.
 	char *p = src;
-#endif
 	char *q = dst;
 	size_t status = iconv(cd, &p, &src_left, &q, &dst_left);
 	iconv_close(cd);
