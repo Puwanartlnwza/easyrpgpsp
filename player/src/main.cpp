@@ -30,38 +30,15 @@
 #include <pspdebug.h>
 #include <psppower.h>
 
-// NOTE: no PSP_MODULE_INFO() here -- this build links against SDL's own
-// PSP main stub (libSDLmain.a, via the `-Dmain=SDL_main` trick in the
-// Makefile), which already provides one. Declaring a second one here
-// caused a "multiple definition of `module_info`" link error.
-PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
-// NOTE: older pspsdk had a PSP_HEAP_SIZE_MAX() macro here, but current
-// pspdev/pspsdk removed it as part of a heap-allocation rework -- the
-// runtime now uses all available RAM for the heap by default (minus a
-// small reserve), so no explicit declaration is needed anymore.
-
-// Without an exit callback, pressing HOME on real hardware doesn't return
-// to the XMB -- the game just hangs and the console needs a battery pull.
-// This is the standard PSP homebrew boilerplate to handle that cleanly.
-int exit_callback(int /*arg1*/, int /*arg2*/, void* /*common*/) {
-	sceKernelExitGame();
-	return 0;
-}
-
-int callback_thread(SceSize /*args*/, void* /*argp*/) {
-	int cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-	sceKernelRegisterExitCallback(cbid);
-	sceKernelSleepThreadCB();
-	return 0;
-}
-
-int setup_callbacks() {
-	int thid = sceKernelCreateThread("update_thread", callback_thread, 0x11, 0xFA0, 0, NULL);
-	if (thid >= 0) {
-		sceKernelStartThread(thid, 0, NULL);
-	}
-	return thid;
-}
+// NOTE: no PSP_MODULE_INFO(), no exit-callback thread, no
+// PSP_MAIN_THREAD_ATTR() here. This build links against SDL's own PSP main
+// stub (libSDLmain.a's SDL_psp_main.c, pulled in via the `-Dmain=SDL_main`
+// trick in the Makefile), which ALREADY sets all of that up on its own
+// (sdl_psp_setup_callbacks() / sdl_psp_exit_callback()) before calling our
+// SDL_main(). Declaring our own copies on top of that caused a
+// "multiple definition of module_info" link error, and very likely also
+// caused a startup crash from creating duplicate/conflicting kernel
+// objects (thread + exit callback) on top of SDL's own.
 
 extern "C"
 #endif
@@ -69,11 +46,9 @@ int main(int argc, char* argv[]) {
 	PspDebugLog("[1] entering main()");
 
 #ifdef PSP
-	setup_callbacks();
-	PspDebugLog("[2] callbacks set up");
-
 	// Overclock CPU/bus (safe, widely used values for PSP homebrew) to
 	// reduce slowdown on bigger maps / lots of events / parallax scrolling.
+	// SDL's stub does NOT do this for us, so it's the one thing left here.
 	scePowerSetClockFrequency(333, 333, 166);
 	PspDebugLog("[3] clock set");
 #endif
