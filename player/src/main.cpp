@@ -23,6 +23,7 @@
 #include "input.h"
 #include "audio.h"
 #include <cstdlib>
+#include "psp_debug_log.h"
 
 #ifdef PSP
 #include <pspkernel.h>
@@ -65,49 +66,29 @@ int setup_callbacks() {
 extern "C"
 #endif
 int main(int argc, char* argv[]) {
-#ifdef PSP
-	// Temporary diagnostics: prints a checkpoint before each init step and
-	// pauses briefly so the last line visible on screen right before a
-	// crash/return-to-XMB tells us exactly where it died. Remove once the
-	// startup crash is tracked down.
-	pspDebugScreenInit();
-	pspDebugScreenPrintf("[1] entering main()\n");
-	sceKernelDelayThread(1000000);
+	PspDebugLog("[1] entering main()");
 
+#ifdef PSP
 	setup_callbacks();
-	pspDebugScreenPrintf("[2] callbacks set up\n");
-	sceKernelDelayThread(1000000);
+	PspDebugLog("[2] callbacks set up");
 
 	// Overclock CPU/bus (safe, widely used values for PSP homebrew) to
 	// reduce slowdown on bigger maps / lots of events / parallax scrolling.
 	scePowerSetClockFrequency(333, 333, 166);
-	pspDebugScreenPrintf("[3] clock set\n");
-	sceKernelDelayThread(1000000);
+	PspDebugLog("[3] clock set");
 #endif
 
 	Player::Init(argc, argv);
-#ifdef PSP
-	pspDebugScreenPrintf("[4] Player::Init done\n");
-	sceKernelDelayThread(1000000);
-#endif
+	PspDebugLog("[4] Player::Init done");
 
 	Graphics::Init();
-#ifdef PSP
-	pspDebugScreenPrintf("[5] Graphics::Init done\n");
-	sceKernelDelayThread(1000000);
-#endif
+	PspDebugLog("[5] Graphics::Init done");
 
 	Input::Init();
-#ifdef PSP
-	pspDebugScreenPrintf("[6] Input::Init done\n");
-	sceKernelDelayThread(1000000);
-#endif
+	PspDebugLog("[6] Input::Init done");
 
 	Audio::Init();
-#ifdef PSP
-	pspDebugScreenPrintf("[7] Audio::Init done -- entering Player::Run()\n");
-	sceKernelDelayThread(1500000);
-#endif
+	PspDebugLog("[7] Audio::Init done -- entering Player::Run()");
 
 	Player::Run();
 	

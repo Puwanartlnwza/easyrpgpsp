@@ -31,6 +31,7 @@
 #include "scene_title.h"
 #include "scene_battle.h"
 #include "utils.h"
+#include "psp_debug_log.h"
 #include <algorithm>
 #include <set>
 #include <locale>
@@ -100,7 +101,9 @@ void Player::Init(int argc, char *argv[]) {
 
 	engine = EngineRpg2k;
 
+	PspDebugLog("[4a] before FileFinder::Init()");
 	FileFinder::Init();
+	PspDebugLog("[4b] after FileFinder::Init(), before CreateBaseUi()");
 
 	DisplayUi = BaseUi::CreateBaseUi(
 		SCREEN_TARGET_WIDTH,
@@ -109,6 +112,7 @@ void Player::Init(int argc, char *argv[]) {
 		!window_flag,
 		RUN_ZOOM
 	);
+	PspDebugLog("[4c] after CreateBaseUi()");
 
 	init = true;
 }

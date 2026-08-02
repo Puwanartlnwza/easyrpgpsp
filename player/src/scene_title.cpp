@@ -53,6 +53,7 @@
 #include "scene_map.h"
 #include "util_macro.h"
 #include "window_command.h"
+#include "psp_debug_log.h"
 
 ////////////////////////////////////////////////////////////
 Scene_Title::Scene_Title() :
@@ -62,6 +63,7 @@ Scene_Title::Scene_Title() :
 
 ////////////////////////////////////////////////////////////
 void Scene_Title::Start() {
+	PspDebugLog("[T1] Scene_Title::Start()");
 	// Clear the cache when the game returns to title screen
 	// e.g. by pressing F12
 	if (init) {
@@ -69,6 +71,7 @@ void Scene_Title::Start() {
 	}
 
 	LoadDatabase();
+	PspDebugLog("[T2] LoadDatabase() done");
 
 	if (!init) {
 		if (Data::system.ldb_id == 2003) {
@@ -78,20 +81,26 @@ void Scene_Title::Start() {
 
 		FileFinder::InitRtpPaths();
 	}
+	PspDebugLog("[T3] InitRtpPaths done");
 
 	Main_Data::game_data.Setup();
+	PspDebugLog("[T4] game_data.Setup() done");
 
 	init = true;
 
 	// Create Game System
 	Game_System::Init();
+	PspDebugLog("[T5] Game_System::Init() done");
 
 	if (!Player::battle_test_flag) {
 		CreateTitleGraphic();
+		PspDebugLog("[T6] CreateTitleGraphic() done");
 		PlayTitleMusic();
+		PspDebugLog("[T7] PlayTitleMusic() done");
 	}
 
 	CreateCommandWindow();
+	PspDebugLog("[T8] CreateCommandWindow() done -- Scene_Title::Start() finished");
 }
 
 ////////////////////////////////////////////////////////////
@@ -153,12 +162,17 @@ void Scene_Title::LoadDatabase() {
 	// Load Database
 	Data::Clear();
 
+	PspDebugLog("[D1] before LDB_Reader::Load");
 	if (!LDB_Reader::Load(FileFinder::FindDefault(".", DATABASE_NAME))) {
+		PspDebugLog("[D2] LDB_Reader::Load FAILED");
 		Output::ErrorStr(LcfReader::GetError());
 	}
+	PspDebugLog("[D3] LDB_Reader::Load OK, before LMT_Reader::Load");
 	if (!LMT_Reader::Load(FileFinder::FindDefault(".", TREEMAP_NAME))) {
+		PspDebugLog("[D4] LMT_Reader::Load FAILED");
 		Output::ErrorStr(LcfReader::GetError());
 	}
+	PspDebugLog("[D5] LMT_Reader::Load OK");
 }
 
 ////////////////////////////////////////////////////////////
